@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GC-MS porovnanie vzorky so štandardom</title>
+<link rel="stylesheet" href="uPlot.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>GC-MS porovnanie vzorky so štandardom</h1>
+  <div class="hdr-btns">
+    <button class="link" id="btnAbout">O programe</button>
+    <button class="secondary" id="btnKoniec" title="Ukončí program na pozadí">Ukončiť</button>
+  </div>
+</header>
+
+<main>
+<section class="card" id="vstup">
+  <div class="grid2">
+    <div>
+      <h2>1. Štandard (referencia)</h2>
+      <label class="drop" id="dropStd">
+        <input type="file" id="fStd" accept=".raw,.mzML,.mzml">
+        <span>Pretiahnite sem súbor alebo kliknite<br><small>.raw (Thermo) alebo .mzML – jeden súbor</small></span>
+      </label>
+      <ul class="files" id="listStd"></ul>
+    </div>
+    <div>
+      <h2>2. Vzorky</h2>
+      <label class="drop" id="dropVz">
+        <input type="file" id="fVz" accept=".raw,.mzML,.mzml" multiple>
+        <span>Pretiahnite sem súbory alebo kliknite<br><small>.raw alebo .mzML – aj viac naraz</small></span>
+      </label>
+      <ul class="files" id="listVz"></ul>
+    </div>
+  </div>
+
+  <details id="ident">
+    <summary>3. Identifikácia látok (voliteľné)</summary>
+    <div class="ident">
+      <div>
+        <label class="chk"><input type="checkbox" id="iNavrh"> Navrhnúť látky z knižnice spektier (.msp)</label>
+        <div class="sub" id="iKnizBox">
+          <div class="small">Priložené knižnice:</div>
+          <div id="iKniz" class="kniz"><span class="small">načítavam…</span></div>
+          <div class="small" style="margin-top:6px">Ďalšie knižnice – napr. vlastná knižnica zo štandardu (.msp):</div>
+          <label class="drop drop-sm" id="dropKniz">
+            <input type="file" id="fKniz" accept=".msp,.MSP,.txt" multiple>
+            <span>Pretiahnite sem súbory .msp alebo kliknite</span>
+          </label>
+          <ul class="files" id="listKniz"></ul>
+        </div>
+      </div>
+      <div>
+        <div class="small"><b>Retenčný index (RI)</b> – spresní návrh podľa času elúcie:</div>
+        <label class="chk"><input type="radio" name="iRi" value="alkany"> z merania alkánov (najpresnejšie)</label>
+        <div class="sub" id="iAlkBox">
+          <label class="drop drop-sm" id="dropAlk">
+            <input type="file" id="fAlk" accept=".raw,.mzML,.mzml">
+            <span>Meranie zmesi n-alkánov (.raw / .mzML) – rovnaká metóda ako vzorky</span>
+          </label>
+          <ul class="files" id="listAlk"></ul>
+          <label class="inl">Najnižší alkán v zmesi: C <input type="number" id="iPrvy" min="5" max="40" step="1" placeholder="auto"></label>
+        </div>
+        <label class="chk"><input type="radio" name="iRi" value="odhad" checked> odhadnúť zo štandardu (bez alkánov, len pri návrhu látok)</label>
+        <label class="chk"><input type="radio" name="iRi" value="ziadny"> nepoužiť RI</label>
+      </div>
+    </div>
+    <div class="settings">
+      <label>Tolerancia RI ± (pri alkánoch) <input type="number" id="iRiTol" step="5" min="5" value="40"></label>
+      <label>Porovnávať spektrá od m/z <input type="number" id="iMzOd" step="1" min="1" value="85"></label>
+      <label>Zhoda pre „pravdepodobne“ od <input type="number" id="iCosNavrh" step="0.01" min="0" max="1" value="0.85"></label>
+      <label>Zhoda pre „možno“ od <input type="number" id="iCosMozno" step="0.01" min="0" max="1" value="0.75"></label>
+      <label>Tolerancia RT pre vlastnú knižnicu ± (s) <input type="number" id="iRtTol" step="1" min="1" value="6"></label>
+    </div>
+    <p class="small">Návrh látky je pomôcka na kontrolu, nie identifikácia. Knižnice a ich pôvod: priečinok <code>kniznice</code> vedľa programu (README.md).</p>
+  </details>
+
+  <details id="nast">
+    <summary>Nastavenia</summary>
+    <div class="settings">
+      <label>Tolerancia posunu v čase ± (s) <input type="number" id="sTol" step="0.05" min="0.05" value="0.5"></label>
+      <label>Krok hľadania posunu (s) <input type="number" id="sKrok" step="0.01" min="0.01" value="0.05"></label>
+      <label>Prah zhody spektra (kosínus) <input type="number" id="sCos" step="0.01" min="0" max="1" value="0.80"></label>
+      <label>Istá zhoda po dekonvolúcii od <input type="number" id="sCosIsty" step="0.01" min="0" max="1" value="0.85"></label>
+      <label>Signál musí byť nad × šum <input type="number" id="sProm" step="1" min="1" value="10"></label>
+      <label class="chk"><input type="checkbox" id="sDek" checked> Dekonvolúcia sporných píkov (pomalšie)</label>
+      <button class="link" id="btnReset" type="button">Obnoviť predvolené</button>
+    </div>
+  </details>
+
+  <div class="actions">
+    <button id="btnRun" disabled>Porovnať</button>
+    <span id="stav"></span>
+  </div>
+  <div class="progress hidden" id="prog"><div id="progBar"></div></div>
+</section>
+
+<section class="card hidden" id="vysledky">
+  <div class="res-head">
+    <h2>Výsledky</h2>
+    <div class="hdr-btns">
+      <button class="secondary hidden" id="btnVlastna" type="button" title="Uloží píky štandardu ako vlastnú knižnicu .msp (názvy môžete upraviť)">Vlastná knižnica zo štandardu…</button>
+      <a class="button" id="btnExcel" href="#" download>Stiahnuť Excel</a>
+    </div>
+  </div>
+  <table class="tbl" id="tblPrehlad"></table>
+  <div class="tabs" id="tabs"></div>
+  <div id="detail"></div>
+</section>
+</main>
+
+<dialog id="dlgVlastna" class="wide">
+  <h3>Vlastná knižnica zo štandardu</h3>
+  <p class="small">Každý zaškrtnutý pík štandardu sa uloží ako záznam knižnice: názov, retenčný čas (RT), RI (ak je) a spektrum z vášho prístroja.
+     Prázdny názov = „Neznámy RT …“. Knižnicu potom nahrajte v časti „Identifikácia látok“ – pri ďalších vzorkách má prednosť pred verejnými knižnicami.</p>
+  <div class="tblwrap"><table class="tbl" id="tblVlastna"></table></div>
+  <div class="actions">
+    <label class="inl">Názov súboru <input type="text" id="vlNazov" value="vlastna_kniznica.msp" size="28"></label>
+    <button id="vlStiahni" type="button">Stiahnuť .msp</button>
+    <form method="dialog"><button class="secondary">Zavrieť</button></form>
+  </div>
+</dialog>
+
+<dialog id="dlgAbout">
+  <h3>O programe</h3>
+  <p><b>GC-MS porovnanie vzorky so štandardom</b>, verzia <span id="ver"></span></p>
+  <p>Pre každý pík štandardu hľadá v vzorke rovnakú látku v tolerancii posunu v čase (korelácia tvaru píku hlavného iónu,
+     vrchol spresnený parabolou, zhoda spektra kosínusom). Sporné píky sa rozložia dekonvolúciou (NMF). Program beží
+     len na tomto počítači – súbory sa nikam neodosielajú.</p>
+  <p class="small">RawFileReader reading tool. Copyright © 2016 by Thermo Fisher Scientific, Inc. All rights reserved.<br>
+     Knižnicu RawFileReader nie je dovolené ďalej šíriť ani používať na komerčné účely (licencia v priečinku LICENCIE).<br>
+     Licencie: <span id="licSubory2"></span><br>
+     Grafy: uPlot (MIT). Excel: ClosedXML (MIT). OpenMcdf (MPL-2.0), CommandLineParser (MIT).<br>
+     Priložené knižnice spektier: verejné zdroje MS-DIAL/MoNA, HMDB, NIST WebBook – podmienky v <code>kniznice/README.md</code>.</p>
+  <form method="dialog"><button>Zavrieť</button></form>
+</dialog>
+
+<dialog id="dlgLic">
+  <h3>Licenčné podmienky</h3>
+  <p>Program číta súbory Thermo <code>.raw</code> pomocou knižnice <b>RawFileReader</b> od Thermo Fisher Scientific.
+     Jej používanie sa riadi licenciou Thermo Fisher (<span id="licSubory"></span>). Hlavné podmienky:</p>
+  <ul class="small">
+    <li>knižnicu RawFileReader <b>nesmiete ďalej šíriť</b> (samostatne ani ako súčasť iného programu);</li>
+    <li>program s touto knižnicou nesmiete komerčne využívať (predávať, poskytovať za poplatok) bez písomného súhlasu Thermo Fisher;</li>
+    <li>knižnica nie je určená na činnosti vyžadujúce bezporuchovú prevádzku („High Risk Activities“, napr. prevádzka zdravotníckych zariadení);</li>
+    <li>program nie je zdravotnícka pomôcka – výsledky vždy posúdi odborník podľa validovanej metódy laboratória.</li>
+  </ul>
+  <p class="small">RawFileReader reading tool. Copyright © 2016 by Thermo Fisher Scientific, Inc. All rights reserved.</p>
+  <label class="chk"><input type="checkbox" id="licChk"> Prečítal(a) som licenciu a súhlasím s jej podmienkami.</label>
+  <div class="actions"><button id="licOk" disabled>Súhlasím</button></div>
+</dialog>
+
+<script src="uPlot.iife.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

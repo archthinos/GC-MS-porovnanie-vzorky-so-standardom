@@ -1,0 +1,22 @@
+bin/
+obj/
+vystup/
+out/
+# Thermo Fisher RawFileReader – proprietary, fetched by fetch-thermo.sh, do not commit
+lib/*.dll
+lib/THERMO_LICENSE.*
+# measurement data (may contain patient information) – never commit
+*.raw
+*.RAW
+*.mzML
+*.mzml
+*.xlsx
+# OS / editor files (may contain local paths or user names)
+.DS_Store
+._*
+Thumbs.db
+desktop.ini
+.vs/
+.vscode/
+.idea/
+*.user

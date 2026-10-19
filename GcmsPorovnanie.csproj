@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>GcmsPorovnanie</AssemblyName>
+    <RootNamespace>GcmsPorovnanie</RootNamespace>
+    <Version>1.1.0</Version>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>false</PublishTrimmed>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- reproducible build without local paths in binaries -->
+    <Deterministic>true</Deterministic>
+    <PathMap>$(MSBuildProjectDirectory)=/src</PathMap>
+    <DebugType>none</DebugType>
+    <Authors>Martin Pohorelský</Authors>
+    <Company>martenech</Company>
+    <Product>GcmsPorovnanie</Product>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="ThermoFisher.CommonCore.Data">
+      <HintPath>lib/ThermoFisher.CommonCore.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="ThermoFisher.CommonCore.RawFileReader">
+      <HintPath>lib/ThermoFisher.CommonCore.RawFileReader.dll</HintPath>
+    </Reference>
+    <!-- dependencies of Thermo RawFileReader 8.0.42 (see its .nuspec) -->
+    <PackageReference Include="OpenMcdf" Version="3.1.4" />
+    <PackageReference Include="CommandLineParser" Version="2.9.1" />
+    <PackageReference Include="System.IO.FileSystem.AccessControl" Version="5.0.0" />
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot/**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="lib/THERMO_LICENSE.*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Link="LICENCIE/%(Filename)%(Extension)" />
+    <None Include="LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Link="LICENCIE/LICENSE-GcmsPorovnanie.txt" />
+    <!-- priložené knižnice EI spektier (.msp) – vedľa programu v priečinku kniznice/ -->
+    <None Include="kniznice/**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" ExcludeFromSingleFile="true" />
+    <None Include="wwwroot/uPlot-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Link="LICENCIE/uPlot-LICENSE.txt" />
+    <None Remove="test/**" />
+    <Compile Remove="test/**" />
+  </ItemGroup>
+
+</Project>

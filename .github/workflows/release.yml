@@ -1,0 +1,60 @@
+# Builds release binaries for all platforms and attaches them to a GitHub Release.
+# Trigger: push a tag like v1.0.0  (git tag v1.0.0 && git push origin v1.0.0)
+# or run it manually from the Actions tab (then the zips are only uploaded as workflow artifacts).
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    # macOS runner: the .NET SDK signs the Mac binaries (Apple Silicon requires a signature)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Fetch Thermo RawFileReader (official repository, not stored in this repo)
+        run: bash fetch-thermo.sh
+
+      - name: Build all platforms
+        run: DOTNET=dotnet bash build.sh
+
+      - name: Smoke test (macOS arm64 binary starts and answers)
+        run: |
+          GCMS_NO_BROWSER=1 ./vystup/osx-arm64/GcmsPorovnanie > server.log 2>&1 &
+          sleep 8
+          url=$(grep -o 'http://[^ ]*' server.log | head -1)
+          echo "server: $url"
+          curl -sf "$url/api/info"
+          kill %1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GcmsPorovnanie-binaries
+          path: |
+            vystup/*.zip
+            vystup/SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            vystup/*.zip
+            vystup/SHA256SUMS.txt
+          body: |
+            Self-contained builds – no installation required. Download the zip for your system, unzip and run
+            `GcmsPorovnanie.exe` (Windows), `Spustit.command` (macOS) or `./GcmsPorovnanie` (Linux).
+
+            The binaries include Thermo Fisher RawFileReader, which is subject to its own license
+            (see `LICENCIE/THERMO_LICENSE.doc` inside the zip): no commercial exploitation without Thermo's
+            consent, no redistribution of RawFileReader, not for High Risk Activities. Not a medical device.
